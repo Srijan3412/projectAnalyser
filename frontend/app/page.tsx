@@ -37,6 +37,12 @@ import ExecutionTrace from "../components/architecture/ExecutionTrace";
 import MetroMap from "../components/architecture/MetroMap/MetroMap";
 import SubwayMap from "../components/architecture/SubwayMap/SubwayMap";
 
+import IngestionControl from "../components/ingestion/IngestionControl";
+import ProgressTracker from "../components/ingestion/ProgressTracker";
+import OverviewAnalytics from "../components/diagnostics/OverviewAnalytics";
+import AuthDetector from "../components/diagnostics/AuthDetector";
+import LanguageBreakdown from "../components/diagnostics/LanguageBreakdown";
+
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 type ResultTab = "overview" | "arch" | "routes" | "db" | "health" | "impact" | "compare" | "env" | "ai-architect" | "onboarding";
@@ -174,11 +180,8 @@ function buildExecutionTrace(route: RouteNode, result: any) {
 export default function Home() {
   const { currentJobId, status, result, setJob, setStatus, setResult, reset } = useAnalysisStore();
 
-  // ── Input State ──
-  const [githubUrl, setGithubUrl] = useState("");
-  const [localPath, setLocalPath] = useState("c:\\Users\\91798\\Documents\\New folder (3)");
+  // ── Ingestion Error State ──
   const [errorMessage, setErrorMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"github" | "zip" | "local">("github");
 
   // ── Result Tab State ──
   const [activeResultTab, setActiveResultTab] = useState<ResultTab>("overview");
@@ -542,74 +545,34 @@ export default function Home() {
       {/* Main Action Block */}
       <div className="w-full max-w-3xl z-10 mb-16">
         {!currentJobId ? (
-          <div className="space-y-6">
-            {/* Input Tab Selector */}
-            <div className="flex justify-center bg-zinc-900/60 p-1.5 rounded-2xl border border-border/60 max-w-md mx-auto backdrop-blur-md">
-              {(["github", "zip", "local"] as const).map((tab) => (
-                <button key={tab} type="button"
-                  onClick={() => { setActiveTab(tab); setErrorMessage(""); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all duration-300 ${activeTab === tab ? "bg-primary text-background shadow-lg font-bold" : "text-muted-foreground hover:text-white"}`}
-                >
-                  {tab === "github" && <><Github className="w-4 h-4" />GitHub URL</>}
-                  {tab === "zip" && <><Binary className="w-4 h-4" />ZIP Upload</>}
-                  {tab === "local" && <><Folder className="w-4 h-4" />Local Path</>}
-                </button>
-              ))}
-            </div>
-
-            {activeTab === "github" && (
-              <form onSubmit={(e) => { e.preventDefault(); if (githubUrl.trim()) urlMutation.mutate(githubUrl); }} className="flex flex-col md:flex-row gap-3">
-                <div className="flex-1">
-                  <Input type="url" placeholder="https://github.com/username/repository" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} icon={<Github className="w-5 h-5" />} required disabled={isPending} />
-                </div>
-                <Button type="submit" isLoading={isPending} className="px-8 py-4">Analyze Repo</Button>
-              </form>
-            )}
-            {activeTab === "zip" && <FileDropzone onFileDrop={handleFileDrop} disabled={isPending} />}
-            {activeTab === "local" && (
-              <div className="space-y-2">
-                <form onSubmit={(e) => { e.preventDefault(); if (localPath.trim()) localMutation.mutate(localPath); }} className="flex flex-col md:flex-row gap-3">
-                  <div className="flex-1">
-                    <Input type="text" placeholder="c:\Users\..." value={localPath} onChange={(e) => setLocalPath(e.target.value)} icon={<Folder className="w-5 h-5" />} required disabled={isPending} />
-                  </div>
-                  <Button type="submit" isLoading={isPending} className="px-8 py-4">Scan Directory</Button>
-                </form>
-                <p className="text-[10px] text-muted-foreground/80 italic">Scans restricted to <code>c:\Users\91798\Documents</code></p>
-              </div>
-            )}
-
-            {errorMessage && (
-              <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/50 text-red-400 text-sm text-center">{errorMessage}</div>
-            )}
-          </div>
+          <IngestionControl
+            onSubmitGithub={(url) => urlMutation.mutate(url)}
+            onSubmitZip={(file) => fileMutation.mutate(file)}
+            onSubmitLocal={(path) => localMutation.mutate(path)}
+            isLoading={isPending}
+            error={errorMessage}
+          />
         ) : (
           /* Processing / Results Card */
-          <Card className="p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-primary uppercase tracking-widest">Active Analysis</p>
-                <h3 className="text-xl font-bold">Job ID: <span className="font-mono text-zinc-400">{currentJobId}</span></h3>
-              </div>
-              <Badge variant={getStatusVariant() as any}>{status}</Badge>
-            </div>
+          <>
+            {status !== "completed" && (
+              <ProgressTracker
+                status={status}
+                progress={getProgressValue()}
+                jobId={currentJobId}
+                error={errorMessage}
+              />
+            )}
 
-            <div className="pt-2"><Progress value={getProgressValue()} showText={true} /></div>
-
-            <div className="space-y-4 pt-4 border-t border-border/50">
-              {[
-                { step: 1, label: "Repository Ingestion", active: status !== "idle" },
-                { step: 2, label: status === "scanning" ? "Scanning files and structures..." : "Codebase File Structure Map", active: status === "scanning" || status === "completed" },
-                { step: 3, label: status === "completed" ? "Intelligence Pipeline Complete!" : "Languages & Framework Detection", active: status === "completed" },
-              ].map(({ step, label, active }) => (
-                <div key={step} className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${active ? "bg-primary text-background" : "bg-zinc-800 text-zinc-650"}`}>{step}</div>
-                  <span className={`text-sm ${active ? "text-zinc-300 font-semibold" : "text-zinc-550"}`}>{label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* ═══════════════ RESULTS SECTION ═══════════════ */}
             {status === "completed" && result && (
+              <Card className="p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-widest">Active Analysis</p>
+                    <h3 className="text-xl font-bold">Job ID: <span className="font-mono text-zinc-400">{currentJobId}</span></h3>
+                  </div>
+                  <Badge variant={getStatusVariant() as any}>{status}</Badge>
+                </div>
               <div className="pt-6 border-t border-border/50 space-y-6">
 
                 {/* Tab Bar */}
@@ -626,83 +589,32 @@ export default function Home() {
 
                 {/* ─── OVERVIEW TAB ─── */}
                 {activeResultTab === "overview" && (
-                  <div className="space-y-5 text-left">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[
-                        { label: "Files", value: result.overview.totalFiles },
-                        { label: "Routes", value: result.overview.totalRoutes },
-                        { label: "Dependencies", value: result.overview.totalDependencies },
-                        { label: "Env Vars", value: result.overview.totalEnvVars },
-                      ].map(s => (
-                        <div key={s.label} className="p-4 rounded-xl bg-zinc-900/60 border border-border/60 text-center">
-                          <div className="text-2xl font-extrabold text-primary">{s.value}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="space-y-6">
+                    <OverviewAnalytics
+                      overview={result.overview}
+                      frameworkMetadata={
+                        result.metadata?.frameworkMetadata
+                          ? {
+                              language: result.metadata.frameworkMetadata.language,
+                              runtime: result.metadata.frameworkMetadata.runtime,
+                              packageManager: result.metadata.frameworkMetadata.packageManager,
+                              frameworks: result.metadata.frameworkMetadata.frameworks
+                            }
+                          : undefined
+                      }
+                    />
 
-                    {result.metadata?.frameworkMetadata && (
-                      <div className="p-4 rounded-xl bg-zinc-900/40 border border-border/60 space-y-3">
-                        <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Tech Stack Detected</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {result.metadata.frameworkMetadata.frameworks.map((fw: any) => <Badge key={fw.name} variant="primary">{fw.name}</Badge>)}
-                          <Badge variant="secondary">{result.metadata.frameworkMetadata.language}</Badge>
-                          <Badge variant="secondary">{result.metadata.frameworkMetadata.runtime}</Badge>
-                          {result.metadata.frameworkMetadata.packageManager && <Badge variant="secondary">{result.metadata.frameworkMetadata.packageManager}</Badge>}
-                        </div>
-                      </div>
-                    )}
+                    <AuthDetector
+                      authType={authData?.authType ?? "None detected"}
+                      evidence={authData?.evidence ?? []}
+                    />
 
-                    {/* Auth Detection Summary */}
-                    {authData && authData.authType !== "None detected" && (
-                      <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-800/40 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4 text-emerald-400" />
-                          <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Authentication Detected</h4>
-                          <Badge variant="success">{authData.authType}</Badge>
-                        </div>
-                        <div className="space-y-1">
-                          {authData.evidence.map((e, i) => (
-                            <div key={i} className="text-[11px] text-emerald-300/80 flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                              {e}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {result.metadata?.entryPoints && result.metadata.entryPoints.length > 0 && (
-                      <div className="p-4 rounded-xl bg-zinc-900/40 border border-border/60 space-y-3">
-                        <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Entry Points</h4>
-                        <div className="space-y-2">
-                          {result.metadata.entryPoints.map((ep: any) => (
-                            <div key={ep.filePath} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50 border border-border/40">
-                              <code className="text-xs font-mono text-emerald-400">{ep.filePath}</code>
-                              <Badge variant="success">{Math.round(ep.confidence * 100)}%</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {result.metadata?.languages && Object.keys(result.metadata.languages).length > 0 && (
-                      <div className="p-4 rounded-xl bg-zinc-900/40 border border-border/60 space-y-3">
-                        <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Language Breakdown</h4>
-                        <div className="space-y-2">
-                          {Object.entries(result.metadata.languages as Record<string, number>)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([lang, lines]) => (
-                              <div key={lang} className="flex items-center gap-3">
-                                <span className="text-xs font-mono text-zinc-300 w-24 shrink-0">{lang}</span>
-                                <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(100, (lines / (result.metadata?.totalLines || 1)) * 100)}%` }} />
-                                </div>
-                                <span className="text-[10px] text-muted-foreground w-14 text-right">{(lines as number).toLocaleString()} lines</span>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
+                    {result.metadata?.languages && (
+                      <LanguageBreakdown
+                        languages={result.metadata.languages}
+                        totalLines={result.metadata.totalLines}
+                        entryPoints={result.metadata.entryPoints || []}
+                      />
                     )}
                   </div>
                 )}
@@ -1941,10 +1853,11 @@ export default function Home() {
                   <Button onClick={reset} variant="secondary">Analyze Another Codebase</Button>
                 </div>
               </div>
-            )}
-          </Card>
-        )}
-      </div>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
 
       {/* Feature Grid */}
       <div className="w-full pt-8 z-10">
