@@ -560,9 +560,11 @@ export default function MetroMap({
       </div>
 
       {/* ReactFlow Canvas Column */}
-      <div className="lg:col-span-2 rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative h-full">
+      <div className="lg:col-span-3 rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative h-full">
         {/* Map Control Buttons: Glow Switch + SVG Exporter */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg">
+        <div className={`absolute top-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg transition-all duration-300 ${
+          activeDetailsScope ? "right-[340px] sm:right-[400px]" : "right-3"
+        }`}>
           <button
             onClick={exportToSvg}
             className="flex items-center gap-1.5 bg-zinc-950 border border-border/60 hover:border-zinc-500 hover:text-white px-2 py-1 rounded-lg text-[9px] font-extrabold text-zinc-350 shadow-sm transition"
@@ -609,37 +611,31 @@ export default function MetroMap({
           <Background color="#222" gap={20} />
           <Controls />
         </ReactFlow>
-      </div>
 
-      {/* Details/Inspector Column */}
-      <div className="lg:col-span-1 h-full overflow-hidden">
-        {activeDetailsScope ? (
-          <FeatureDetails
-            stationId={selectedStationId}
-            featureId={selectedFeature}
-            result={result}
-            features={features}
-            onClose={() => {
-              setSelectedStationId(null);
-              setSelectedFeature(null);
-            }}
-            onSwitchTab={onSwitchTab}
-            onSetImpactFile={onSetImpactFile}
-            onSelectTraceRouteId={onSelectTraceRouteId}
-            onStartJourney={startJourney}
-            onStopJourney={stopJourney}
-            journeyActive={journeyActive}
-            journeyNodeId={journeyNodeId}
-          />
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-border/80 rounded-2xl bg-zinc-950/20 text-zinc-550">
-            <HelpCircle className="w-10 h-10 text-zinc-700 mb-2 animate-pulse" />
-            <h4 className="text-xs font-bold text-zinc-300">Map Inspector</h4>
-            <p className="text-[10px] text-zinc-500 max-w-xs mt-1 leading-relaxed">
-              Click on a station node or select a business feature on the legend to inspect metrics, check complexity ratings, or trigger Journey Mode.
-            </p>
-          </div>
-        )}
+        {/* Floating Details/Inspector Overlay Card */}
+        <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${
+          activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+        }`}>
+          {activeDetailsScope && (
+            <FeatureDetails
+              stationId={selectedStationId}
+              featureId={selectedFeature}
+              result={result}
+              features={features}
+              onClose={() => {
+                setSelectedStationId(null);
+                setSelectedFeature(null);
+              }}
+              onSwitchTab={onSwitchTab}
+              onSetImpactFile={onSetImpactFile}
+              onSelectTraceRouteId={onSelectTraceRouteId}
+              onStartJourney={startJourney}
+              onStopJourney={stopJourney}
+              journeyActive={journeyActive}
+              journeyNodeId={journeyNodeId}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
