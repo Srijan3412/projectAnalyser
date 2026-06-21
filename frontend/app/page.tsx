@@ -852,25 +852,26 @@ export default function Home() {
                 <div className="space-y-2 max-h-[calc(100vh-360px)] overflow-y-auto">
                   {(result.metadata?.databaseInfo?.entities ?? []).map((entity: EntityOperation, idx: number) => (
                     <div key={idx}
-                      onClick={() => setSelectedEntity(selectedEntity?.name === entity.name ? null : entity)}
+                      onClick={() => setSelectedEntity(selectedEntity?.entity === entity.entity ? null : entity)}
                       className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                        selectedEntity?.name === entity.name ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
+                        selectedEntity?.entity === entity.entity ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
                       }`}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <Database className="w-4 h-4 text-primary shrink-0" />
-                        <span className="font-bold text-white text-sm">{entity.name}</span>
+                        <span className="font-bold text-white text-sm">{entity.entity}</span>
                         <div className="flex gap-1 flex-wrap ml-auto">
                           {(entity.operations ?? []).map((op: string) => <Badge key={op} variant="secondary" className="text-[9px]">{op}</Badge>)}
                         </div>
                       </div>
-                      {selectedEntity?.name === entity.name && entity.fields && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
-                          {entity.fields.map((field: any, fi: number) => (
-                            <div key={fi} className="text-[10px] font-mono text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded-lg">
-                              <span className="text-zinc-200">{field.name}</span>: <span className="text-primary/80">{field.type}</span>
-                            </div>
-                          ))}
+                      {selectedEntity?.entity === entity.entity && (
+                        <div className="mt-3 text-[11px] text-zinc-400 border-t border-border/20 pt-2">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px]">Active Operations:</span>
+                          <div className="flex gap-2 mt-1">
+                            {(entity.operations ?? []).map((op: string) => (
+                              <span key={op} className="px-2 py-0.5 bg-zinc-800 rounded text-zinc-300 capitalize font-mono">{op}</span>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -974,15 +975,15 @@ export default function Home() {
                 {impactData && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4"><div className="text-[10px] text-zinc-500 mb-1">Direct Impact</div><div className="text-2xl font-bold text-primary">{impactData.directImpact?.length ?? 0}</div></div>
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4"><div className="text-[10px] text-zinc-500 mb-1">Transitive Impact</div><div className="text-2xl font-bold text-amber-400">{impactData.transitiveImpact?.length ?? 0}</div></div>
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4"><div className="text-[10px] text-zinc-500 mb-1">Risk Score</div><div className="text-2xl font-bold text-red-400">{impactData.riskScore ?? 0}</div></div>
+                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4"><div className="text-[10px] text-zinc-500 mb-1">Direct Impact</div><div className="text-2xl font-bold text-primary">{impactData.impact?.directDependents?.length ?? 0}</div></div>
+                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4"><div className="text-[10px] text-zinc-500 mb-1">Transitive Impact</div><div className="text-2xl font-bold text-amber-400">{impactData.impact?.transitiveDependents?.length ?? 0}</div></div>
+                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4"><div className="text-[10px] text-zinc-500 mb-1">Risk Score</div><div className="text-2xl font-bold text-red-400">{impactData.impact?.impactScore ?? 0}</div></div>
                     </div>
-                    {impactData.directImpact?.length > 0 && (
+                    {impactData.impact?.directDependents && impactData.impact.directDependents.length > 0 && (
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
                         <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">Directly Impacted Files</div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                          {impactData.directImpact.slice(0, 10).map((f: string, i: number) => <code key={i} className="text-[10px] font-mono text-zinc-300 truncate">{f}</code>)}
+                          {impactData.impact.directDependents.slice(0, 10).map((f: string, i: number) => <code key={i} className="text-[10px] font-mono text-zinc-300 truncate">{f}</code>)}
                         </div>
                       </div>
                     )}
@@ -1023,12 +1024,36 @@ export default function Home() {
                 </div>
                 {isCompareLoading && <div className="flex items-center gap-2 text-zinc-500 text-xs"><Loader2 className="w-4 h-4 animate-spin" /> Running comparison...</div>}
                 {compareData && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-emerald-950/10 border border-emerald-900/30 rounded-xl p-4"><div className="text-[10px] text-emerald-500 mb-1">Added Files</div><div className="text-2xl font-bold text-emerald-400">{compareData.added?.length ?? 0}</div></div>
-                      <div className="bg-red-950/10 border border-red-900/30 rounded-xl p-4"><div className="text-[10px] text-red-500 mb-1">Removed Files</div><div className="text-2xl font-bold text-red-400">{compareData.removed?.length ?? 0}</div></div>
-                      <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-4"><div className="text-[10px] text-amber-500 mb-1">Modified Files</div><div className="text-2xl font-bold text-amber-400">{compareData.modified?.length ?? 0}</div></div>
+                      <div className="bg-emerald-950/10 border border-emerald-900/30 rounded-xl p-4"><div className="text-[10px] text-emerald-500 mb-1">Added Files</div><div className="text-2xl font-bold text-emerald-400">{compareData.summary?.addedFilesCount ?? 0}</div></div>
+                      <div className="bg-red-950/10 border border-red-900/30 rounded-xl p-4"><div className="text-[10px] text-red-500 mb-1">Removed Files</div><div className="text-2xl font-bold text-red-400">{compareData.summary?.removedFilesCount ?? 0}</div></div>
+                      <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-4"><div className="text-[10px] text-amber-500 mb-1">Modified Files</div><div className="text-2xl font-bold text-amber-400">{compareData.summary?.modifiedFilesCount ?? 0}</div></div>
                     </div>
+                    {compareData.files && compareData.files.length > 0 && (
+                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
+                        <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">File Changes</div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                          {compareData.files.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-zinc-800/60 last:border-0">
+                              <span className="font-mono text-zinc-300 truncate max-w-[70%]">{file.path}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
+                                  file.status === "added" ? "bg-emerald-500/10 text-emerald-400" :
+                                  file.status === "removed" ? "bg-red-500/10 text-red-400" :
+                                  "bg-amber-500/10 text-amber-400"
+                                }`}>{file.status}</span>
+                                {file.linesDiff !== 0 && (
+                                  <span className={`font-mono text-[10px] ${file.linesDiff > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                    {file.linesDiff > 0 ? `+${file.linesDiff}` : file.linesDiff} lines
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
