@@ -12,7 +12,8 @@ import {
 } from "../lib/api/client";
 import {
   RouteNode, EnvironmentVariable, EntityOperation, ArchitectureNode,
-  ChatMessage, FileNode, ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff
+  ChatMessage, FileNode, ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff,
+  LearningStep
 } from "@shared/types";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -1087,7 +1088,7 @@ export default function Home() {
                         <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
                         <code className="text-xs font-mono text-zinc-200 truncate flex-1">{envVar.name}</code>
                         <Badge variant="secondary" className="text-[9px]">{envVar.category || "General"}</Badge>
-                        {envVar.criticality === "HIGH" && <Badge variant="destructive" className="text-[9px]">HIGH RISK</Badge>}
+                        {envVar.criticality === "HIGH" && <Badge variant="error" className="text-[9px]">HIGH RISK</Badge>}
                       </div>
                       {selectedEnvVar?.name === envVar.name && (
                         <div className="space-y-1.5 mt-2">
@@ -1128,13 +1129,32 @@ export default function Home() {
                     <Sparkles className="w-5 h-5 text-primary" />
                     <span className="text-sm font-bold text-white">Architecture Summary</span>
                   </div>
-                  <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">{result.aiSummary}</p>
+                  {result.aiSummary.purpose && (
+                    <p className="text-sm text-zinc-300 leading-relaxed mb-4 font-semibold italic">
+                      "{result.aiSummary.purpose}"
+                    </p>
+                  )}
+                  {result.aiSummary.stack && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 bg-zinc-950/40 rounded-xl border border-border/20">
+                      {Object.entries(result.aiSummary.stack).map(([key, val]) => (
+                        <div key={key} className="text-xs">
+                          <span className="text-zinc-500 capitalize block mb-0.5">{key}</span>
+                          <span className="text-zinc-200 font-medium font-mono">{String(val || 'N/A')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {result.aiSummary.markdownSummary && (
+                    <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line border-t border-border/20 pt-4">
+                      {result.aiSummary.markdownSummary}
+                    </p>
+                  )}
                 </div>
-                {result.refactoringChecklist && (
+                {result.staticAnalysis?.summary?.recommendations && result.staticAnalysis.summary.recommendations.length > 0 && (
                   <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Refactoring Checklist</div>
+                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Refactoring Recommendations</div>
                     <div className="space-y-2">
-                      {result.refactoringChecklist.map((item: string, i: number) => (
+                      {result.staticAnalysis.summary.recommendations.map((item: string, i: number) => (
                         <div key={i} className="flex items-start gap-2 text-sm text-zinc-300">
                           <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                           <span>{item}</span>
@@ -1154,18 +1174,28 @@ export default function Home() {
                   <h2 className="text-2xl font-bold text-white mt-1">Onboarding Checklist</h2>
                 </div>
                 <div className="space-y-3">
-                  {(result.onboarding.steps ?? []).map((step: any, idx: number) => (
+                  {(result.onboarding.learningPath ?? []).map((step: LearningStep, idx: number) => (
                     <div key={idx}
                       onClick={() => setOpenOnboardingStep(openOnboardingStep === idx ? null : idx)}
                       className="bg-zinc-900/60 border border-border/40 rounded-xl p-4 cursor-pointer hover:border-zinc-600 transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">{idx + 1}</div>
-                        <span className="text-sm font-semibold text-white flex-1">{step.title}</span>
+                        <span className="text-sm font-semibold text-white flex-1">{step.label}</span>
+                        <div className="text-[10px] text-zinc-500 font-mono bg-zinc-800/80 px-2 py-0.5 rounded capitalize">{step.category}</div>
                         {openOnboardingStep === idx ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
                       </div>
-                      {openOnboardingStep === idx && step.description && (
-                        <p className="text-xs text-zinc-400 mt-3 ml-10 leading-relaxed">{step.description}</p>
+                      {openOnboardingStep === idx && (
+                        <div className="mt-3 ml-10 space-y-2">
+                          {step.file && (
+                            <p className="text-[10px] font-mono text-primary">
+                              File: <span className="text-zinc-300">{step.file}</span>
+                            </p>
+                          )}
+                          {step.reason && (
+                            <p className="text-xs text-zinc-400 leading-relaxed">{step.reason}</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
