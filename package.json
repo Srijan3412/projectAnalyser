@@ -1,0 +1,18 @@
+{
+  "name": "project-analyser-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "dev": "npm run dev --workspaces --parallel"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
