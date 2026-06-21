@@ -1086,14 +1086,26 @@ export default function Home() {
                       <div className="flex items-center gap-2 mb-2">
                         <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
                         <code className="text-xs font-mono text-zinc-200 truncate flex-1">{envVar.name}</code>
-                        <Badge variant="secondary" className="text-[9px]">{envVar.type || "string"}</Badge>
+                        <Badge variant="secondary" className="text-[9px]">{envVar.category || "General"}</Badge>
+                        {envVar.criticality === "HIGH" && <Badge variant="destructive" className="text-[9px]">HIGH RISK</Badge>}
                       </div>
                       {selectedEnvVar?.name === envVar.name && (
                         <div className="space-y-1.5 mt-2">
-                          {envVar.description && <p className="text-[10px] text-zinc-400">{envVar.description}</p>}
+                          <p className="text-[10px] text-zinc-400">Usages in code: <span className="text-zinc-200 font-bold">{envVar.usages}</span></p>
+                          {envVar.usedBy && envVar.usedBy.length > 0 && (
+                            <div className="text-[10px] text-zinc-400">
+                              <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block mb-1">Used By:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {envVar.usedBy.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
+                              </div>
+                            </div>
+                          )}
                           {envVar.files && envVar.files.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {envVar.files.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
+                            <div className="text-[10px] text-zinc-400 mt-2">
+                              <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block mb-1">Declared In Files:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {envVar.files.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
+                              </div>
                             </div>
                           )}
                         </div>
