@@ -213,7 +213,7 @@ export default function Home() {
   const { data: jobsListData } = useQuery({
     queryKey: ["jobsList"],
     queryFn: getJobsList,
-    refetchInterval: 5000,
+    refetchInterval: 30000, // Reduced from 5s to 30s to prevent 429 rate limit issues
   });
   const { data: compareData, isLoading: isCompareLoading } = useQuery({
     queryKey: ["compareJobs", currentJobId, compareJobId],
@@ -360,7 +360,7 @@ export default function Home() {
     queryKey: ["status", currentJobId],
     queryFn: () => getAnalysisStatus(currentJobId!),
     enabled: !!currentJobId && status !== "completed" && status !== "failed",
-    refetchInterval: 1500,
+    refetchInterval: 5000, // Reduced from 1.5s to 5s to prevent 429 rate limit issues
   });
   useEffect(() => { if (statusData?.status) setStatus(statusData.status); }, [statusData, setStatus]);
 
